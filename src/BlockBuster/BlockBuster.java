@@ -3,10 +3,15 @@ package BlockBuster;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
+import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.collision.shapes.SphereCollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.joints.HingeJoint;
 import com.jme3.bullet.objects.PhysicsCharacter;
+import com.jme3.collision.CollisionResult;
+import com.jme3.collision.CollisionResults;
 import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -28,7 +33,7 @@ import com.jme3.texture.Texture.WrapMode;
  * Example 12 - how to give objects physical properties so they bounce and fall.
  * @author base code by double1984, updated by zathras
  */
-public class BlockBuster extends SimpleApplication implements ActionListener {
+public class BlockBuster extends SimpleApplication implements ActionListener,PhysicsCollisionListener {
  
   public static void main(String args[]) {
     BlockBuster app = new BlockBuster();
@@ -55,6 +60,7 @@ public class BlockBuster extends SimpleApplication implements ActionListener {
   private static final Sphere sphere;
   private RigidBodyControl    floor_phy;
   private static final Box    floor;
+  private RigidBodyControl    block_floor_phy;
  
   /** dimensions used for bricks and wall */
   private static final float brickLength = 0.1f;
@@ -67,9 +73,11 @@ public class BlockBuster extends SimpleApplication implements ActionListener {
    private static boolean useHttp = false;
    private boolean left=false,right=false,up=false,down=false;
    
-   private Node[] obj_pierre = new Node[10000];
+   Geometry floor_geo;
+   private Node node_floor ;
+   private Node obj_pierre = new Node("node_bricks");
    private int compteur;
-   private Geometry[][][] geom = new Geometry[5][5][5];
+   //private Geometry[][][] geom = new Geometry[5][5][5];
    private Vector3f dir;
   /** Teste node objet **/
   //Node obj_pierre;
@@ -85,13 +93,22 @@ public class BlockBuster extends SimpleApplication implements ActionListener {
     floor = new Box(Vector3f.ZERO, 100f, 0.1f, 100f);
     floor.scaleTextureCoordinates(new Vector2f(100, 100));
   }
+  
+  
  
   @Override
   public void simpleInitApp() {
-           
+    bulletAppState = new BulletAppState();
+
+    bulletAppState.setThreadingType(BulletAppState.ThreadingType.PARALLEL);
+    stateManager.attach(bulletAppState);
+    
+    
+    
     /** Set up Physics Game */
     bulletAppState = new BulletAppState();
     stateManager.attach(bulletAppState);
+    bulletAppState.getPhysicsSpace().addCollisionListener(this);
     bulletAppState.getPhysicsSpace().enableDebug(assetManager);
     compteur = 0;
     /** Configure cam to look at scene */
@@ -99,6 +116,7 @@ public class BlockBuster extends SimpleApplication implements ActionListener {
     //cam.lookAt(new Vector3f(2, 2, 0), Vector3f.UNIT_Y);
     /** Initialize the scene, materials, and physics space */
     initMaterials();
+
     initWall(new Vector3f(0,10,0));
     //obj_pierre.move(10,0,0);
     //initWall(new Vector3f(10,0,0));
@@ -120,8 +138,6 @@ public class BlockBuster extends SimpleApplication implements ActionListener {
 //     rootNode.attachChild(gameLevel);
 
      bulletAppState.getPhysicsSpace().add(player);
-     
-     
   }
 
  
@@ -149,166 +165,140 @@ public class BlockBuster extends SimpleApplication implements ActionListener {
  
   /** Make a solid floor and add it to the scene. */
   public void initFloor() {
-    Geometry floor_geo = new Geometry("Floor", floor);
+    node_floor = new Node("floor");
+    floor_geo = new Geometry("Floor", floor);
     floor_geo.setMaterial(floor_mat);
     floor_geo.setLocalTranslation(0, -0.1f, 0);
-    this.rootNode.attachChild(floor_geo);
+    node_floor.attachChild(floor_geo);
+    rootNode.attachChild(node_floor);
     /* Make the floor physical with mass 0.0f! */
     floor_phy = new RigidBodyControl(0.0f);
     floor_geo.addControl(floor_phy);
     bulletAppState.getPhysicsSpace().add(floor_phy);
+    //floor_phy.setFriction(1.0f);
   }
  
   /** This loop builds a wall out of individual bricks. */
   public void initWall(Vector3f loc) {
-    obj_pierre[compteur] = new Node("object_"+compteur+""); 
-
-//    boolean  mat[][][] = new boolean[11][11][11];
-//    for(int k = 0; k <11; k++){
-//        for (int j = 0; j < 11; j++) {
-//          for (int i = 0; i < 11; i++) {
-//              mat[i][j][k]=false;
-//          }
-//        }
-//    }
-//    mat[5][5][5]=true;
-//    for(int k = 4; k >1; k--){
-//        for (int j = 9; j > 1; j--) {
-//          for (int i = 9; i > 1; i--) {
-//               if((mat[k-1][i][j]==true)||(mat[k+1][i][j]==true)||(mat[k][i-1][j]==true)||(mat[k][i+1][j]==true)||(mat[k][i][j+1]==true)||(mat[k][i][j-1]==true)){
-//                   if(Math.random()>0.25){
-//                       mat[k][i][j] = true;
-//                   }
-//               }
-//            }
-//        }
-//    }
-//    for(int k = 6; k < 10; k++){
-//        for (int j = 9; j > 1; j--) {
-//          for (int i = 9; i > 1; i--) {
-//               if((mat[k-1][i][j]==true)||(mat[k+1][i][j]==true)||(mat[k][i-1][j]==true)||(mat[k][i+1][j]==true)||(mat[k][i][j+1]==true)||(mat[k][i][j-1]==true)){
-//                   if(Math.random()>0.25){
-//                       mat[k][i][j] = true;
-//                   }
-//               }
-//            }
-//        }
-//    }
-   // Geometry[][][] geom = new Geometry[5][5][5];
+    Node node_bloc = new Node("brick"+compteur);
+    Geometry[][][] geom = new Geometry[5][5][5];
     for(int k = 0; k <5; k++){
         for (int j = 0; j < 5; j++) {
             for (int i = 0; i < 5; i++) {
                 Vector3f vt =
-                 new Vector3f((i * brickLength*2)+loc.x, (j*brickHeight*2)+loc.y, (k*brickWidth*2)+loc.z);
+                 new Vector3f((i * brickLength*2f)+loc.x, (j*brickHeight*2f)+loc.y, (k*brickWidth*2f)+loc.z);
                 //if(mat[k][i][j]){
                 //System.out.println("vt = "+vt.x+" "+vt.y+" "+vt.z);
+
                 geom[k][i][j] = new Geometry("brick", box);
                 geom[k][i][j].setMaterial(wall_mat);
                 geom[k][i][j].setLocalTranslation(vt);
                 
                 
-//                brick_phy = new RigidBodyControl(0.5f);
-//                geom[k][i][j].addControl(brick_phy);
-//                bulletAppState.getPhysicsSpace().add(brick_phy);
-                obj_pierre[compteur].attachChild(geom[k][i][j]);
-
-               
-//                if(i>0){
-//                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
-//                    bulletAppState.getPhysicsSpace().add(joint);
-//                }
-//                if(j>0){
-//                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
-//                    bulletAppState.getPhysicsSpace().add(joint);
-//                }
-//                if(k>0){
-//                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k-1][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
-//                    bulletAppState.getPhysicsSpace().add(joint);
-//                }
+                brick_phy = new RigidBodyControl(0.5f);
+                geom[k][i][j].addControl(brick_phy);
+                bulletAppState.getPhysicsSpace().add(brick_phy);
                 
+               
+                if(i>0){
+                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
+                    joint.setCollisionBetweenLinkedBodys(false);
+                    bulletAppState.getPhysicsSpace().add(joint);
+                    
+                    joint=new HingeJoint(geom[k][i-1][j].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(-0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
+                    joint.setCollisionBetweenLinkedBodys(false);
+                    bulletAppState.getPhysicsSpace().add(joint);
+                }
+                if(j>0){
+                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
+                    joint.setCollisionBetweenLinkedBodys(false);
+                    bulletAppState.getPhysicsSpace().add(joint);
+                    joint=new HingeJoint(geom[k][i][j-1].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,-0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
+                    joint.setCollisionBetweenLinkedBodys(false);
+                    bulletAppState.getPhysicsSpace().add(joint);
+                }
+                if(k>0){
+                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k-1][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
+                    joint.setCollisionBetweenLinkedBodys(false);
+                    
+                    bulletAppState.getPhysicsSpace().add(joint);
+                    joint=new HingeJoint(geom[k-1][i][j].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,-0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
+                    joint.setCollisionBetweenLinkedBodys(false);
+                    bulletAppState.getPhysicsSpace().add(joint);
+                }
+               // if(Math.random()<0.5){
+                    node_bloc.attachChild(geom[k][i][j]);
+                    
+               // }
             }
         }
     }
+    node_bloc.setUserData("dynamic", true);
+    obj_pierre.attachChild(node_bloc);
+    rootNode.attachChild(obj_pierre);
 
-    for(int i = 0; i < obj_pierre[compteur].getQuantity();i++){
-        if(Math.random()<0.5){
-            obj_pierre[compteur].getChild(i).removeFromParent();
-        }
-    }
-    block_phy = new RigidBodyControl(0.5f);
-    
-    obj_pierre[compteur].addControl(block_phy);
-    
-    bulletAppState.getPhysicsSpace().add(block_phy);
-    
-    rootNode.attachChild(obj_pierre[compteur]);
-    //CompoundCollisionShape compound=new CompoundCollisionShape();
-    //BoxCollisionShape boxCollisionShape=new BoxCollisionShape(new Vector3f(1f,1f,1f));
-    //SphereCollisionShape sphereCollisionShape = new SphereCollisionShape(1f);
-    //CollisionShape myComplexShape = CollisionShapeFactory.createMeshShape((Node) obj_pierre );
-    //compound.addChildShape(sphereCollisionShape, new Vector3f(1f,1f,1f));
-    //brick_phy = new RigidBodyControl(myComplexShape,2f);
-    //obj_pierre.setLocalTranslation(0,2,0);
-    //obj_pierre.addControl(brick_phy);
-    
-    //obj_pierre.getControl(RigidBodyControl.class).getCollisionShape().setScale(new Vector3f(,5,5));
-
-    //bulletAppState.getPhysicsSpace().add(brick_phy);
     compteur++;
   }
  
   /** This method creates one individual physical brick. */
   public void makeBrick(Vector3f loc) {
-    /** Create a brick geometry and attach to scene graph. */
-    obj_pierre[compteur] = new Node("object_"+compteur+""); 
-    //Geometry[][][] geom = new Geometry[5][5][5];
+
+    Node node_bloc = new Node("brick"+compteur);
+    Geometry[][][] geom = new Geometry[5][5][5];
     for(int k = 0; k <5; k++){
         for (int j = 0; j < 5; j++) {
             for (int i = 0; i < 5; i++) {
                 Vector3f vt =
-                 new Vector3f((i * brickLength*2)+loc.x, (j*brickHeight*2)+loc.y, (k*brickWidth*2)+loc.z);
+                 new Vector3f((i * brickLength*2f)+loc.x, (j*brickHeight*2f)+loc.y, (k*brickWidth*2f)+loc.z);
                 //if(mat[k][i][j]){
                 //System.out.println("vt = "+vt.x+" "+vt.y+" "+vt.z);
-                //geom[k][i][j] = new Geometry("brick", box);
+
+                geom[k][i][j] = new Geometry("brick", box);
                 geom[k][i][j].setMaterial(wall_mat);
-                //geom[k][i][j].setLocalTranslation(vt);
+                geom[k][i][j].setLocalTranslation(vt);
                 
-                brick_phy = new RigidBodyControl(1f);
-                //obj_pierre[compteur]
+                
+                brick_phy = new RigidBodyControl(0.5f);
                 geom[k][i][j].addControl(brick_phy);
-                
                 bulletAppState.getPhysicsSpace().add(brick_phy);
-                obj_pierre[compteur].attachChild(geom[k][i][j]);
+                
                
                 if(i>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
+                    joint.setCollisionBetweenLinkedBodys(false);
                     bulletAppState.getPhysicsSpace().add(joint);
+                    
                     joint=new HingeJoint(geom[k][i-1][j].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(-0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
+                    joint.setCollisionBetweenLinkedBodys(false);
                     bulletAppState.getPhysicsSpace().add(joint);
                 }
                 if(j>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
+                    joint.setCollisionBetweenLinkedBodys(false);
                     bulletAppState.getPhysicsSpace().add(joint);
                     joint=new HingeJoint(geom[k][i][j-1].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,-0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
+                    joint.setCollisionBetweenLinkedBodys(false);
                     bulletAppState.getPhysicsSpace().add(joint);
                 }
                 if(k>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k-1][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
+                    joint.setCollisionBetweenLinkedBodys(false);
+                    
                     bulletAppState.getPhysicsSpace().add(joint);
                     joint=new HingeJoint(geom[k-1][i][j].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,-0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
+                    joint.setCollisionBetweenLinkedBodys(false);
                     bulletAppState.getPhysicsSpace().add(joint);
                 }
+               // if(Math.random()<0.5){
+                    node_bloc.attachChild(geom[k][i][j]);
+                    
+               // }
             }
         }
     }
+    node_bloc.setUserData("dynamic", true);
+    obj_pierre.attachChild(node_bloc);
 
-    for(int i = 0; i < obj_pierre[compteur].getQuantity();i++){
-        if(Math.random()<0.5){
-            obj_pierre[compteur].getChild(i).removeFromParent();
-        }
-    }
-    
-    rootNode.attachChild(obj_pierre[compteur]);
     compteur++;
 
   }
@@ -318,9 +308,11 @@ public class BlockBuster extends SimpleApplication implements ActionListener {
    * from the camera position in the camera direction.*/
    public void makeCannonBall(Vector3f dir) {
     /** Create a cannon ball geometry and attach to scene graph. */
+    Node node_ball = new Node("ball");
     Geometry ball_geo = new Geometry("cannon ball", sphere);
     ball_geo.setMaterial(stone_mat);
-    rootNode.attachChild(ball_geo);
+    node_ball.attachChild(ball_geo);
+    rootNode.attachChild(node_ball);
     /** Position the cannon ball  */
     System.out.println(cam.getLocation());
     ball_geo.setLocalTranslation(cam.getLocation().x+(cam.getDirection().x*5f),cam.getLocation().y,cam.getLocation().z+(cam.getDirection().z*5f));
@@ -406,7 +398,10 @@ public class BlockBuster extends SimpleApplication implements ActionListener {
             }
         } else if (binding.equals("make_brick")){
             //obj_pierre.getChild(0).move(0, 20, 0);
-            initWall(new Vector3f(cam.getLocation().x+(cam.getDirection().x*5f),cam.getLocation().y,cam.getLocation().z+(cam.getDirection().z*5f)));
+            if(value){
+                makeBrick(new Vector3f(cam.getLocation().x+(cam.getDirection().x*5f),cam.getLocation().y+10f,cam.getLocation().z+(cam.getDirection().z*5f)));
+            }
+            
         }
     }
          
@@ -431,5 +426,42 @@ public class BlockBuster extends SimpleApplication implements ActionListener {
         }
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
+        for(int i = 0; i < obj_pierre.getChildren().size();i++){
+            CollisionResults results = new CollisionResults();
+            Node node_temp = (Node) obj_pierre.getChild(i);
+            
+            Geometry geom_temp = (Geometry) node_temp.getChild(i);
+            //geom_temp.collideWith(node_floor, results);
+            
+            Vector3f vec = geom_temp.getLocalTranslation();
+            if((vec.x<0.1)&&(vec.y < 0.15)&&(vec.z<0.1)){
+                for(int j = 0; j < node_temp.getChildren().size();j++){
+                    Geometry g_temp = (Geometry) node_temp.getChild(j);
+                    //System.out.println("teste "+g_temp.getControl(0).toString());
+
+                    try {
+                    if(node_temp.getUserData("dynamic")){
+                        System.out.println("teste "+g_temp.getControl(0).toString());
+                        node_temp.getChild(j).removeControl(block_phy);
+                        
+                        block_floor_phy = new RigidBodyControl(0f);
+                        /** Add physical ball to physics space. */
+                        node_temp.getChild(j).addControl(block_floor_phy);
+                        bulletAppState.getPhysicsSpace().add(block_floor_phy);
+                        node_temp.setUserData("dynamic", false);
+                        bulletAppState.update(60);
+                    }    
+                    
+                    }catch(Exception e){
+                        System.out.println("catch teste "+i+" "+geom_temp.getLocalTranslation().x+" y ="+geom_temp.getLocalTranslation().y);
+                    }
+                }
+            }
+        }
+    }
+    
+    @Override
+    public void collision(PhysicsCollisionEvent event){
+        
     }
 }
