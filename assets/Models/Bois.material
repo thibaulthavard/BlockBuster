@@ -1,0 +1,35 @@
+// Bois genrated by blender2ogre 0.5.9
+
+material Bois 
+{
+    receive_shadows on 
+
+    technique
+    {
+        pass Bois
+        {
+            ambient 0.6684495806694031 0.24552880227565765 0.03951164707541466 1.0
+            diffuse 0.5347596725040624 0.19642304474745753 0.031609318131347264 1.0
+            specular 0.5 0.5 0.5 1.0 12.5
+            emissive 0.0 0.0 0.0 1.0
+
+            alpha_to_coverage off
+            colour_write on
+            cull_hardware clockwise
+            depth_check on
+            depth_func less_equal
+            depth_write on
+            illumination_stage 
+            light_clip_planes off
+            light_scissor off
+            lighting on
+            normalise_normals off
+            polygon_mode solid
+            scene_blend one zero
+            scene_blend_op add
+            shading gouraud
+            transparent_sorting on
+
+        }
+    }
+}

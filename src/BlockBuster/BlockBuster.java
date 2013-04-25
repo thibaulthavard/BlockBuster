@@ -1,5 +1,9 @@
 package BlockBuster;
  
+import com.jme3.animation.AnimChannel;
+import com.jme3.animation.AnimControl;
+import com.jme3.animation.AnimEventListener;
+import com.jme3.animation.LoopMode;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
@@ -19,10 +23,14 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.material.Material;
+import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
+import com.jme3.scene.CameraNode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Sphere.TextureMode;
@@ -33,7 +41,8 @@ import com.jme3.texture.Texture.WrapMode;
  * Example 12 - how to give objects physical properties so they bounce and fall.
  * @author base code by double1984, updated by zathras
  */
-public class BlockBuster extends SimpleApplication implements ActionListener,PhysicsCollisionListener {
+public class BlockBuster extends SimpleApplication 
+implements ActionListener,PhysicsCollisionListener, AnimEventListener {
  
   public static void main(String args[]) {
     BlockBuster app = new BlockBuster();
@@ -82,6 +91,12 @@ public class BlockBuster extends SimpleApplication implements ActionListener,Phy
   /** Teste node objet **/
   //Node obj_pierre;
   
+   /*Pioche*/
+   private Spatial pioche;
+   private AnimChannel channel;
+   private AnimControl control;
+   private CameraNode camNode;
+    
   static {
     /** Initialize the cannon ball geometry */
     sphere = new Sphere(32, 32, 0.4f, true, false);
@@ -104,7 +119,6 @@ public class BlockBuster extends SimpleApplication implements ActionListener,Phy
     stateManager.attach(bulletAppState);
     
     
-    
     /** Set up Physics Game */
     bulletAppState = new BulletAppState();
     stateManager.attach(bulletAppState);
@@ -118,16 +132,13 @@ public class BlockBuster extends SimpleApplication implements ActionListener,Phy
     initMaterials();
 
     initWall(new Vector3f(0,10,0));
-    //obj_pierre.move(10,0,0);
-    //initWall(new Vector3f(10,0,0));
+    obj_pierre.move(10,0,0);
+    initWall(new Vector3f(10,0,0));
     initFloor();
     initCrossHairs();
 
-
-    flyCam.setMoveSpeed(100);
     setupKeys();
-    this.cam.setFrustumFar(2000);
-
+  
      player = new PhysicsCharacter(new SphereCollisionShape(5), .1f);
      player.setJumpSpeed(20);
      player.setFallSpeed(30);
@@ -136,8 +147,16 @@ public class BlockBuster extends SimpleApplication implements ActionListener,Phy
      player.setPhysicsLocation(new Vector3f(0, 10, 10));
 
 //     rootNode.attachChild(gameLevel);
-
+     pioche = assetManager.loadModel("Models/pioche.j3o");
+     pioche.scale(0.3f, 0.3f, 0.3f);
+     rootNode.attachChild(pioche);
+     
+     control = rootNode.getChild("Pioche-ogremesh").getControl(AnimControl.class);
+     control.addListener(this);
+     channel = control.createChannel();
+                 
      bulletAppState.getPhysicsSpace().add(player);
+      
   }
 
  
@@ -306,7 +325,7 @@ public class BlockBuster extends SimpleApplication implements ActionListener,Phy
   /** This method creates one individual physical cannon ball.
    * By defaul, the ball is accelerated and flies
    * from the camera position in the camera direction.*/
-   public void makeCannonBall(Vector3f dir) {
+   public void detruitBloc(Vector3f dir) {
     /** Create a cannon ball geometry and attach to scene graph. */
     Node node_ball = new Node("ball");
     Geometry ball_geo = new Geometry("cannon ball", sphere);
@@ -394,7 +413,9 @@ public class BlockBuster extends SimpleApplication implements ActionListener,Phy
             player.jump();
         } else if (binding.equals("shoot")) {
             if(value) {
-                makeCannonBall(dir);
+                channel.setAnim("coupPioche", 0.50f);
+                channel.setLoopMode(LoopMode.Loop);
+                detruitBloc(dir);
             }
         } else if (binding.equals("make_brick")){
             //obj_pierre.getChild(0).move(0, 20, 0);
@@ -408,6 +429,19 @@ public class BlockBuster extends SimpleApplication implements ActionListener,Phy
     @Override
     public void simpleUpdate(float tpf) {
         //System.out.println(cam.getDirection().clone().multLocal(0.6f));
+        pioche.setLocalTranslation(player.getPhysicsLocation().x + 1.0f,player.getPhysicsLocation().y - 1.0f,player.getPhysicsLocation().z - 3.0f);
+        Vector3f vectorDifference = new Vector3f(cam.getLocation().subtract(pioche.getWorldTranslation()));
+        pioche.setLocalTranslation(vectorDifference.addLocal(pioche.getLocalTranslation()));
+        
+        Quaternion worldDiff = new Quaternion(cam.getRotation().subtract(pioche.getWorldRotation()));
+        pioche.setLocalRotation(worldDiff.addLocal(pioche.getLocalRotation()));
+        
+        pioche.move(cam.getDirection().mult(3));
+        pioche.move(cam.getUp().mult(-0.8f));
+        pioche.move(cam.getLeft().mult(0.6f));
+        pioche.rotate(0, -90.0f, 0);
+        
+        
         dir = cam.getDirection();
         Vector3f camDir = cam.getDirection().clone().multLocal(0.6f);
         Vector3f camLeft = cam.getLeft().clone().multLocal(0.4f);
@@ -463,5 +497,15 @@ public class BlockBuster extends SimpleApplication implements ActionListener,Phy
     @Override
     public void collision(PhysicsCollisionEvent event){
         
+    }
+
+    public void onAnimCycleDone(AnimControl control, AnimChannel channel, String animName) {
+        if (animName.equals("coupPioche")) {
+            channel.setLoopMode(LoopMode.DontLoop);
+          }
+    }
+
+    public void onAnimChange(AnimControl control, AnimChannel channel, String animName) {
+        //unused
     }
 }

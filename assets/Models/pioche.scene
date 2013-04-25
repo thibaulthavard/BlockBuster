@@ -1,0 +1,80 @@
+<scene formatVersion="1.0.1" exported_by="peyo" export_time="1364566557.499941" previous_export_time="1364566531.282441" >
+  <nodes >
+    <node name="Armature" >
+      <position z="-0.000000" x="0.000000" y="0.000000" />
+      <rotation qx="0.000000" qy="0.000000" qz="-0.000000" qw="1.000000" />
+      <scale z="1.000000" x="1.000000" y="1.000000" />
+      <game >
+        <sensors />
+        <actuators />
+      </game>
+      <node name="Camera" >
+        <position z="8.049430" x="2.063437" y="4.694515" />
+        <rotation qx="0.522512" qy="0.096367" qz="-0.066021" qw="0.844592" />
+        <scale z="1.000000" x="1.000000" y="1.000000" />
+        <game >
+          <sensors />
+          <actuators />
+        </game>
+        <camera name="Camera" fov="0.6605947096585073" projectionType="perspective" >
+          <clipping nearPlaneDist="0.10000000149011612" far="100.0" farPlaneDist="100.0" near="0.10000000149011612" />
+        </camera>
+      </node>
+      <node name="Lamp" >
+        <position z="5.632087" x="8.241641" y="4.041286" />
+        <rotation qx="0.169076" qy="0.755880" qz="-0.272171" qw="0.570947" />
+        <scale z="1.000000" x="1.000000" y="1.000000" />
+        <game >
+          <sensors />
+          <actuators />
+        </game>
+        <light name="Lamp" type="point" shadow="true" powerScale="1.0" >
+          <position z="5.632087" x="8.241641" y="4.041286" />
+          <lightAttenuation linear="0.03333335240683057" range="5000" quadratic="0.0" constant="1.0" />
+          <colourDiffuse g="1.0" b="1.0" r="1.0" />
+          <colourSpecular g="1.0" b="1.0" r="1.0" />
+          <colourShadow g="1.0" b="1.0" r="1.0" />
+        </light>
+      </node>
+      <node name="Circle" >
+        <position z="-0.000000" x="0.000000" y="0.000000" />
+        <rotation qx="0.000000" qy="0.000000" qz="-0.000000" qw="1.000000" />
+        <scale z="1.000000" x="1.000000" y="1.000000" />
+        <game >
+          <sensors />
+          <actuators />
+        </game>
+        <entity lock_rot_y="False" mass_radius="1.0" inertia_tensor="0.4000000059604645" damping_rot="0.18000000715255737" meshFile="Pioche.mesh" damping_trans="0.02539999969303608" velocity_min="0.0" anisotropic_friction="False" name="Pioche" lock_rot_x="False" lock_rot_z="False" velocity_max="0.0" lock_trans_z="False" lock_trans_x="False" lock_trans_y="False" friction_x="1.0" friction_y="1.0" friction_z="1.0" ghost="False" physics_type="STATIC" mass="1.0" actor="False" />
+      </node>
+      <node name="Lamp.001" >
+        <position z="8.679937" x="0.147905" y="0.553190" />
+        <rotation qx="0.169076" qy="0.755880" qz="-0.272171" qw="0.570947" />
+        <scale z="1.000000" x="1.000000" y="1.000000" />
+        <game >
+          <sensors />
+          <actuators />
+        </game>
+        <light name="Lamp.001" type="point" shadow="true" powerScale="1.0" >
+          <position z="8.679937" x="0.147905" y="0.553190" />
+          <lightAttenuation linear="0.03333335240683057" range="5000" quadratic="0.0" constant="1.0" />
+          <colourDiffuse g="1.0" b="1.0" r="1.0" />
+          <colourSpecular g="1.0" b="1.0" r="1.0" />
+          <colourShadow g="1.0" b="1.0" r="1.0" />
+        </light>
+      </node>
+    </node>
+  </nodes>
+  <externals >
+    <item type="material" >
+      <file name="D:\Pierre\Cours\3eme Annee\Dev\Blender\Pioche\Bois.material" />
+    </item>
+    <item type="material" >
+      <file name="D:\Pierre\Cours\3eme Annee\Dev\Blender\Pioche\Fer.material" />
+    </item>
+  </externals>
+  <environment >
+    <colourDiffuse g="0.0" b="0.0" r="0.0" />
+    <colourBackground g="0.0" b="0.0" r="0.0" />
+    <colourAmbient g="0.0" b="0.0" r="0.0" />
+  </environment>
+</scene>
