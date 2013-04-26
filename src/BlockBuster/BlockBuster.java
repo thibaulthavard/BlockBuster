@@ -265,10 +265,10 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
   public void makeBrick(Vector3f loc) {
 
     Node node_bloc = new Node("brick" + compteur);
-    Geometry[][][] geom = new Geometry[5][5][5];
-    for(int k = 0; k <5; k++){
-        for (int j = 0; j < 5; j++) {
-            for (int i = 0; i < 5; i++) {
+    Geometry[][][] geom = new Geometry[4][4][4];
+    for(int k = 0; k <4; k++){
+        for (int j = 0; j < 4; j++) {
+            for (int i = 0; i < 4; i++) {
                 Vector3f vt =
                  new Vector3f((i * brickLength*2f)+loc.x, (j*brickHeight*2f)+loc.y, (k*brickWidth*2f)+loc.z);
                 //if(mat[k][i][j]){
@@ -464,35 +464,32 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
         for(int i = 0; i < obj_pierre.getChildren().size();i++){
             CollisionResults results = new CollisionResults();
             Node node_temp = (Node) obj_pierre.getChild(i);
-            
-            Geometry geom_temp = (Geometry) node_temp.getChild(i);
-            //geom_temp.collideWith(node_floor, results);
-            
-            Vector3f vec = geom_temp.getLocalTranslation();
-            if((vec.x<0.1)&&(vec.y < 0.15)&&(vec.z<0.1)){
-                for(int j = 0; j < node_temp.getChildren().size();j++){
-                    Geometry g_temp = (Geometry) node_temp.getChild(j);
-                    //System.out.println("teste "+g_temp.getControl(0).toString());
-
-                    try {
-                    if(node_temp.getUserData("dynamic")){
+            if(node_temp.getUserData("dynamic")){
+                
+                Geometry geom_temp = (Geometry) node_temp.getChild(i);
+                Vector3f vec = geom_temp.getLocalTransform().getTranslation();
+                System.out.println("teste "+i+" x="+vec.x+" y = "+vec.y+" z="+vec.z);
+                //geom_temp.collideWith(node_floor, results);
+                if((vec.x<0.12)&&(vec.y < 0.12)&&(vec.z<0.12)){
+                    for(int j = 0; j < node_temp.getChildren().size();j++){
+                        Geometry g_temp = (Geometry) node_temp.getChild(j);
+                        //System.out.println("teste "+g_temp.getControl(0).toString());
+                        try{
                         System.out.println("teste "+g_temp.getControl(0).toString());
-                        node_temp.getChild(j).removeControl(block_phy);
-                        
-                        block_floor_phy = new RigidBodyControl(0f);
-                        /** Add physical ball to physics space. */
-                        node_temp.getChild(j).addControl(block_floor_phy);
-                        bulletAppState.getPhysicsSpace().add(block_floor_phy);
+                        g_temp.removeControl(g_temp.getControl(0));    
+//                        block_floor_phy = new RigidBodyControl(0f);
+//                        /** Add physical ball to physics space. */
+//                        g_temp.addControl(block_floor_phy);
+//                        bulletAppState.getPhysicsSpace().add(block_floor_phy);
+//                        bulletAppState.update(60);
+                        }catch(Exception e){
+                            System.out.println("catch teste "+i+" "+geom_temp.getLocalTranslation().x+" y ="+geom_temp.getLocalTranslation().y);
+                        }
                         node_temp.setUserData("dynamic", false);
-                        bulletAppState.update(60);
-                    }    
-                    
-                    }catch(Exception e){
-                        System.out.println("catch teste "+i+" "+geom_temp.getLocalTranslation().x+" y ="+geom_temp.getLocalTranslation().y);
                     }
                 }
             }
-        }
+        }//End For
     }
     
     @Override
