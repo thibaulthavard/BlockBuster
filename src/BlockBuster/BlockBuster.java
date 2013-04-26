@@ -104,7 +104,7 @@ implements ActionListener, AnimEventListener {
     /** Mise en place de la physique */
     bulletAppState = new BulletAppState();
     stateManager.attach(bulletAppState);
-    //bulletAppState.getPhysicsSpace().enableDebug(assetManager);
+    bulletAppState.getPhysicsSpace().enableDebug(assetManager);
     compteur = 0;
     
     //Initialisation de l'environnement
@@ -441,7 +441,7 @@ implements ActionListener, AnimEventListener {
                     System.out.println("teste vec "+i+" x="+vec.x+" y = "+vec.y+" z="+vec.z);
                     System.out.println("teste vec prec "+i+" x="+vec_prec.x+" y = "+vec_prec.y+" z="+vec_prec.z+" dist = "+vec_move);
                     //geom_temp.collideWith(node_floor, results);
-                    if(vec_move < 0.09){
+                    if(vec_move < 0.0009){
                         System.out.println("teste vec "+tick_compt);
                         for(int j = 0; j < node_temp.getChildren().size();j++){
                             Geometry g_temp = (Geometry) node_temp.getChild(j);
