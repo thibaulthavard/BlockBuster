@@ -7,14 +7,10 @@ import com.jme3.animation.LoopMode;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.PhysicsCollisionEvent;
-import com.jme3.bullet.collision.PhysicsCollisionListener;
-import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.jme3.bullet.collision.shapes.SphereCollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.joints.HingeJoint;
 import com.jme3.bullet.objects.PhysicsCharacter;
-import com.jme3.collision.CollisionResult;
 import com.jme3.collision.CollisionResults;
 import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
@@ -23,7 +19,6 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.material.Material;
-import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector2f;
@@ -39,73 +34,63 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
  
 /**
- * Example 12 - how to give objects physical properties so they bounce and fall.
- * @author base code by double1984, updated by zathras
+ * BLOCKBUSTER
+ * Ce jeu vous permet de créer des cubes de différentes forme à l'aide de la touche A puis de les sculter
+ * Auteur : HAVARD Thibault VANDENHOVE Pierre
+ * Version : 1.0.0
+ * Date : 26.04.2013
  */
 public class BlockBuster extends SimpleApplication 
-implements ActionListener,PhysicsCollisionListener, AnimEventListener {
+implements ActionListener, AnimEventListener {
  
+  /** Fonction Main pour lancer l'application **/
   public static void main(String args[]) {
     BlockBuster app = new BlockBuster();
     app.start();
   }
  
-  /** Prepare the Physics Application State (jBullet) */
+  /** Preparation de la physique(jBullet) */
   private BulletAppState bulletAppState;
  
-  /** Prepare Materials */
+  /** Preparation des Materials */
   Material wall_mat;
   Material stone_mat;
   Material floor_mat;
  
-  /** Prepare geometries and physical nodes for bricks and cannon balls. */
+  /** Préparation des géométries et volume de control*/
   private RigidBodyControl    brick_phy;
-  private RigidBodyControl    block_phy;
   private static final Box    box;
-  
-//  private RigidBodyControl brick_ens;
-//  private static final Sphere sphere_brick;
-  
-  private RigidBodyControl    ball_phy;
-  private static final Sphere sphere;
   private RigidBodyControl    floor_phy;
   private static final Box    floor;
-  private RigidBodyControl    block_floor_phy;
  
-  /** dimensions used for bricks and wall */
+  /** Dimension d'un sous-bloc */
   private static final float brickLength = 0.1f;
   private static final float brickWidth  = 0.1f;
   private static final float brickHeight = 0.1f;
   
-   private Node gameLevel;
+  /** Initialisation des variables utilisateurs joueur,camera ... **/
    private PhysicsCharacter player;
    private Vector3f walkDirection = new Vector3f();
-   private static boolean useHttp = false;
    private boolean left=false,right=false,up=false,down=false;
    
    Geometry floor_geo;
    private Node node_floor ;
    private Node obj_pierre = new Node("node_bricks");
-   private int compteur;
-   //private Geometry[][][] geom = new Geometry[5][5][5];
+   private int compteur,tick_compt = 1;
+
    private Vector3f dir;
-  /** Teste node objet **/
-  //Node obj_pierre;
+
   
    /*Pioche*/
    private Spatial pioche;
    private AnimChannel channel;
    private AnimControl control;
-   private CameraNode camNode;
     
   static {
-    /** Initialize the cannon ball geometry */
-    sphere = new Sphere(32, 32, 0.4f, true, false);
-    sphere.setTextureMode(TextureMode.Projected);
-    /** Initialize the brick geometry */
+
+    /**Initialisation des géométries */
     box = new Box(Vector3f.ZERO, brickLength, brickHeight, brickWidth);
     box.scaleTextureCoordinates(new Vector2f(0.5f, 0.5f));
-    /** Initialize the floor geometry */
     floor = new Box(Vector3f.ZERO, 100f, 0.1f, 100f);
     floor.scaleTextureCoordinates(new Vector2f(100, 100));
   }
@@ -113,41 +98,29 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
   
  
   @Override
+  /** Fonction d'initialisation de l'application **/
   public void simpleInitApp() {
-    bulletAppState = new BulletAppState();
-
-    bulletAppState.setThreadingType(BulletAppState.ThreadingType.PARALLEL);
-    stateManager.attach(bulletAppState);
-    
-    
-    /** Set up Physics Game */
+   
+    /** Mise en place de la physique */
     bulletAppState = new BulletAppState();
     stateManager.attach(bulletAppState);
-    bulletAppState.getPhysicsSpace().addCollisionListener(this);
-    bulletAppState.getPhysicsSpace().enableDebug(assetManager);
+    //bulletAppState.getPhysicsSpace().enableDebug(assetManager);
     compteur = 0;
-    /** Configure cam to look at scene */
-    //cam.setLocation(new Vector3f(0, 4f, 6f));
-    //cam.lookAt(new Vector3f(2, 2, 0), Vector3f.UNIT_Y);
-    /** Initialize the scene, materials, and physics space */
+    
+    //Initialisation de l'environnement
     initMaterials();
-
-    //initWall(new Vector3f(0,10,0));
-    obj_pierre.move(10,0,0);
     initWall(new Vector3f(10,0,0));
     initFloor();
     initCrossHairs();
 
+    //Initialisation Controle et personnage
     setupKeys();
-  
-     player = new PhysicsCharacter(new SphereCollisionShape(5), .1f);
-     player.setJumpSpeed(20);
-     player.setFallSpeed(30);
-     player.setGravity(20);
-
-     player.setPhysicsLocation(new Vector3f(0, 10, 10));
-
-//     rootNode.attachChild(gameLevel);
+    
+    player = new PhysicsCharacter(new SphereCollisionShape(5), .1f);
+    player.setJumpSpeed(20);
+    player.setFallSpeed(30);
+    player.setGravity(20);
+    player.setPhysicsLocation(new Vector3f(0, 10, 10));
      
      pioche = assetManager.loadModel("Models/pioche.j3o");
      pioche.scale(0.3f, 0.3f, 0.3f);
@@ -162,7 +135,7 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
   }
 
  
-  /** Initialize the materials used in this scene. */
+  /** Initialisation des matériaux */
   public void initMaterials() {
     wall_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
     TextureKey key = new TextureKey("Textures/Terrain/BrickWall/BrickWall.jpg");
@@ -184,7 +157,7 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
     floor_mat.setTexture("ColorMap", tex3);
   }
  
-  /** Make a solid floor and add it to the scene. */
+  /** Création du sol */
   public void initFloor() {
     node_floor = new Node("floor");
     floor_geo = new Geometry("Floor", floor);
@@ -199,28 +172,25 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
     //floor_phy.setFriction(1.0f);
   }
  
-  /** This loop builds a wall out of individual bricks. */
+  /** Création du premier blocs lors du debut du jeu */
   public void initWall(Vector3f loc) {
     Node node_bloc = new Node("brick" + compteur);
-    Geometry[][][] geom = new Geometry[5][5][5];
-    for(int k = 0; k <5; k++){
-        for (int j = 0; j < 5; j++) {
-            for (int i = 0; i < 5; i++) {
+    Geometry[][][] geom = new Geometry[4][4][4];
+    for(int k = 0; k <4; k++){
+        for (int j = 0; j < 4; j++) {
+            for (int i = 0; i < 4; i++) {
                 Vector3f vt =
                  new Vector3f((i * brickLength*2f)+loc.x, (j*brickHeight*2f)+loc.y, (k*brickWidth*2f)+loc.z);
-                //if(mat[k][i][j]){
-                //System.out.println("vt = "+vt.x+" "+vt.y+" "+vt.z);
 
                 geom[k][i][j] = new Geometry("brick", box);
                 geom[k][i][j].setMaterial(wall_mat);
-                geom[k][i][j].setLocalTranslation(vt);
-                
+                geom[k][i][j].setLocalTranslation(vt);             
                 
                 brick_phy = new RigidBodyControl(0.5f);
                 geom[k][i][j].addControl(brick_phy);
                 bulletAppState.getPhysicsSpace().add(brick_phy);
                 
-               
+                //Jonction des blocs entre eux
                 if(i>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
                     joint.setCollisionBetweenLinkedBodys(false);
@@ -247,21 +217,23 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
                     joint.setCollisionBetweenLinkedBodys(false);
                     bulletAppState.getPhysicsSpace().add(joint);
                 }
-               // if(Math.random()<0.5){
-                    node_bloc.attachChild(geom[k][i][j]);
-                    
-               // }
+                if(Math.random()<0.5){
+                    node_bloc.attachChild(geom[k][i][j]);     
+                }
             }
         }
     }
     node_bloc.setUserData("dynamic", true);
+    node_bloc.setUserData("pos", loc);
+    node_bloc.setUserData("pos2", Vector3f.ZERO);
     obj_pierre.attachChild(node_bloc);
     rootNode.attachChild(obj_pierre);
+
 
     compteur++;
   }
  
-  /** This method creates one individual physical brick. */
+  /** Cette fonction créer un nouveau bloc */
   public void makeBrick(Vector3f loc) {
 
     Node node_bloc = new Node("brick" + compteur);
@@ -271,18 +243,14 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
             for (int i = 0; i < 4; i++) {
                 Vector3f vt =
                  new Vector3f((i * brickLength*2f)+loc.x, (j*brickHeight*2f)+loc.y, (k*brickWidth*2f)+loc.z);
-                //if(mat[k][i][j]){
-                //System.out.println("vt = "+vt.x+" "+vt.y+" "+vt.z);
 
                 geom[k][i][j] = new Geometry("brick", box);
                 geom[k][i][j].setMaterial(wall_mat);
                 geom[k][i][j].setLocalTranslation(vt);
                 
-                
                 brick_phy = new RigidBodyControl(0.5f);
                 geom[k][i][j].addControl(brick_phy);
                 bulletAppState.getPhysicsSpace().add(brick_phy);
-                
                
                 if(i>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
@@ -310,23 +278,20 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
                     joint.setCollisionBetweenLinkedBodys(false);
                     bulletAppState.getPhysicsSpace().add(joint);
                 }
-               // if(Math.random()<0.5){
-                    node_bloc.attachChild(geom[k][i][j]);
-                    
-               // }
+                if(Math.random()<0.5){
+                    node_bloc.attachChild(geom[k][i][j]);      
+               }
             }
         }
     }
     node_bloc.setUserData("dynamic", true);
+    node_bloc.setUserData("pos", loc);
+    node_bloc.setUserData("pos2", Vector3f.ZERO);
     obj_pierre.attachChild(node_bloc);
-
     compteur++;
-
   }
  
-  /** This method creates one individual physical cannon ball.
-   * By defaul, the ball is accelerated and flies
-   * from the camera position in the camera direction.*/
+  /** Cette fonction sert à detruire le bloc qui correspond*/
    public void detruitBloc(Vector3f dir) {
     // 1. Reset results list.
         CollisionResults results = new CollisionResults();
@@ -341,7 +306,7 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
         }
    }
  
-  /** A plus sign used as crosshairs to help the player with aiming.*/
+  /** Cette fonction initialise la croix de visée*/
   protected void initCrossHairs() {
     guiNode.detachAllChildren();
     guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
@@ -354,7 +319,7 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
     guiNode.attachChild(ch);
   }
   
-  
+  /** Fonction d'initialisation des touches **/
       private void setupKeys() {
         inputManager.addMapping("shoot", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
         inputManager.addMapping("Lefts", new KeyTrigger(KeyInput.KEY_Q));
@@ -371,7 +336,8 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
         inputManager.addListener(this,"shoot");
         inputManager.addListener(this, "make_brick");
     }
-      
+    
+    /** Fonction qui ecoute les actions effectué (ActionListener) **/
      public void onAction(String binding, boolean value, float tpf) {
 
         if (binding.equals("Lefts")) {
@@ -420,8 +386,8 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
     }
          
     @Override
+    /** Fonction de mise à jour et de controle. C'edt dans cette fonction qu'on passera les blocs en dynamique/statique**/
     public void simpleUpdate(float tpf) {
-        
         pioche.setLocalTranslation(player.getPhysicsLocation().x + 1.0f,
                 player.getPhysicsLocation().y - 1.0f,player.getPhysicsLocation().z - 3.0f);
         
@@ -455,41 +421,51 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
         }
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
+
         for(int i = 0; i < obj_pierre.getChildren().size();i++){
-            CollisionResults results = new CollisionResults();
             Node node_temp = (Node) obj_pierre.getChild(i);
-            if(node_temp.getUserData("dynamic")){
-                
-                Geometry geom_temp = (Geometry) node_temp.getChild(i);
-                Vector3f vec = geom_temp.getLocalTransform().getTranslation();
-                System.out.println("teste "+i+" x="+vec.x+" y = "+vec.y+" z="+vec.z);
-                //geom_temp.collideWith(node_floor, results);
-                if((vec.x<0.12)&&(vec.y < 0.12)&&(vec.z<0.12)){
-                    for(int j = 0; j < node_temp.getChildren().size();j++){
-                        Geometry g_temp = (Geometry) node_temp.getChild(j);
-                        //System.out.println("teste "+g_temp.getControl(0).toString());
-                        try{
-                        System.out.println("teste "+g_temp.getControl(0).toString());
-                        g_temp.removeControl(g_temp.getControl(0));    
-//                        block_floor_phy = new RigidBodyControl(0f);
-//                        /** Add physical ball to physics space. */
-//                        g_temp.addControl(block_floor_phy);
-//                        bulletAppState.getPhysicsSpace().add(block_floor_phy);
-//                        bulletAppState.update(60);
-                        }catch(Exception e){
-                            System.out.println("catch teste "+i+" "+geom_temp.getLocalTranslation().x+" y ="+geom_temp.getLocalTranslation().y);
+            if(node_temp.getChildren().size()>0){
+                Geometry geom_temp = (Geometry) node_temp.getChild(0);
+                if(tick_compt==10){
+                    // System.out.println("teste null");
+                    node_temp.setUserData("pos2", geom_temp.getWorldTranslation().clone());
+                }
+                if(tick_compt==20){
+                    node_temp.setUserData("pos", geom_temp.getWorldTranslation().clone());
+                }
+                if(node_temp.getUserData("dynamic").equals(true)){
+                    Vector3f vec = (Vector3f)node_temp.getUserData("pos");
+                    Vector3f vec_prec = (Vector3f)node_temp.getUserData("pos2");
+                    float vec_move = vec.distance(vec_prec);
+
+                    System.out.println("teste vec "+i+" x="+vec.x+" y = "+vec.y+" z="+vec.z);
+                    System.out.println("teste vec prec "+i+" x="+vec_prec.x+" y = "+vec_prec.y+" z="+vec_prec.z+" dist = "+vec_move);
+                    //geom_temp.collideWith(node_floor, results);
+                    if(vec_move < 0.09){
+                        System.out.println("teste vec "+tick_compt);
+                        for(int j = 0; j < node_temp.getChildren().size();j++){
+                            Geometry g_temp = (Geometry) node_temp.getChild(j);
+                            try{
+                                g_temp.removeControl(g_temp.getControl(0));    
+                            }catch(Exception e){
+                                System.out.println("catch teste "+i+" "+geom_temp.getLocalTranslation().x+" y ="+geom_temp.getLocalTranslation().y);
+                            }
+                            node_temp.setUserData("dynamic", false);
                         }
-                        node_temp.setUserData("dynamic", false);
                     }
+
+                }else{
+
                 }
             }
         }//End For
-    }
-    
-    @Override
-    public void collision(PhysicsCollisionEvent event){
         
+        tick_compt++;
+        if(tick_compt>20){
+            tick_compt = 1;
+        }
     }
+
 
     public void onAnimCycleDone(AnimControl control, AnimChannel channel, String animName) {
         if (animName.equals("coupPioche")) {
