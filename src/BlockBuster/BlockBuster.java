@@ -25,6 +25,7 @@ import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
+import com.jme3.math.Ray;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.CameraNode;
@@ -131,7 +132,7 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
     /** Initialize the scene, materials, and physics space */
     initMaterials();
 
-    initWall(new Vector3f(0,10,0));
+    //initWall(new Vector3f(0,10,0));
     obj_pierre.move(10,0,0);
     initWall(new Vector3f(10,0,0));
     initFloor();
@@ -147,6 +148,7 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
      player.setPhysicsLocation(new Vector3f(0, 10, 10));
 
 //     rootNode.attachChild(gameLevel);
+     
      pioche = assetManager.loadModel("Models/pioche.j3o");
      pioche.scale(0.3f, 0.3f, 0.3f);
      rootNode.attachChild(pioche);
@@ -199,7 +201,7 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
  
   /** This loop builds a wall out of individual bricks. */
   public void initWall(Vector3f loc) {
-    Node node_bloc = new Node("brick"+compteur);
+    Node node_bloc = new Node("brick" + compteur);
     Geometry[][][] geom = new Geometry[5][5][5];
     for(int k = 0; k <5; k++){
         for (int j = 0; j < 5; j++) {
@@ -262,7 +264,7 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
   /** This method creates one individual physical brick. */
   public void makeBrick(Vector3f loc) {
 
-    Node node_bloc = new Node("brick"+compteur);
+    Node node_bloc = new Node("brick" + compteur);
     Geometry[][][] geom = new Geometry[5][5][5];
     for(int k = 0; k <5; k++){
         for (int j = 0; j < 5; j++) {
@@ -326,27 +328,24 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
    * By defaul, the ball is accelerated and flies
    * from the camera position in the camera direction.*/
    public void detruitBloc(Vector3f dir) {
-    /** Create a cannon ball geometry and attach to scene graph. */
-    Node node_ball = new Node("ball");
-    Geometry ball_geo = new Geometry("cannon ball", sphere);
-    ball_geo.setMaterial(stone_mat);
-    node_ball.attachChild(ball_geo);
-    rootNode.attachChild(node_ball);
-    /** Position the cannon ball  */
-    System.out.println(cam.getLocation());
-    ball_geo.setLocalTranslation(cam.getLocation().x+(cam.getDirection().x*5f),cam.getLocation().y,cam.getLocation().z+(cam.getDirection().z*5f));
-    /** Make the ball physcial with a mass > 0.0f */
-    ball_phy = new RigidBodyControl(1f);
+    // 1. Reset results list.
+        CollisionResults results = new CollisionResults();
+        // 2. Aim the ray from cam loc to cam direction.
+        Ray ray = new Ray(cam.getLocation(), cam.getDirection());
+        // 3. Collect intersections between Ray and Shootables in results list.
+        obj_pierre.collideWith(ray, results);
+        // 4. Print the results
+        System.out.println("----- Collisions? " + results.size() + "-----");
+        for (int i = 0; i < results.size(); i++) {
+          // For each hit, we know distance, impact point, name of geometry.
+          float dist = results.getCollision(i).getDistance();
+          Vector3f pt = results.getCollision(i).getContactPoint();
+          String hit = results.getCollision(i).getGeometry().getName();
 
-    /** Add physical ball to physics space. */
-    ball_geo.addControl(ball_phy);
-   
-    bulletAppState.getPhysicsSpace().add(ball_phy);
-    
-    /** Accelerate the physcial ball to shoot it. */
-    System.out.println(dir);
-    ball_phy.setLinearVelocity(dir.mult(25));
-  }
+          System.out.println("* Collision #" + i);
+          System.out.println("  You shot " + hit + " at " + pt + ", " + dist + " wu away.");
+         }
+   }
  
   /** A plus sign used as crosshairs to help the player with aiming.*/
   protected void initCrossHairs() {
@@ -428,8 +427,10 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
          
     @Override
     public void simpleUpdate(float tpf) {
-        //System.out.println(cam.getDirection().clone().multLocal(0.6f));
-        pioche.setLocalTranslation(player.getPhysicsLocation().x + 1.0f,player.getPhysicsLocation().y - 1.0f,player.getPhysicsLocation().z - 3.0f);
+        
+        pioche.setLocalTranslation(player.getPhysicsLocation().x + 1.0f,
+                player.getPhysicsLocation().y - 1.0f,player.getPhysicsLocation().z - 3.0f);
+        
         Vector3f vectorDifference = new Vector3f(cam.getLocation().subtract(pioche.getWorldTranslation()));
         pioche.setLocalTranslation(vectorDifference.addLocal(pioche.getLocalTranslation()));
         
