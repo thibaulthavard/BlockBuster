@@ -334,17 +334,11 @@ implements ActionListener,PhysicsCollisionListener, AnimEventListener {
         Ray ray = new Ray(cam.getLocation(), cam.getDirection());
         // 3. Collect intersections between Ray and Shootables in results list.
         obj_pierre.collideWith(ray, results);
-        // 4. Print the results
-        System.out.println("----- Collisions? " + results.size() + "-----");
-        for (int i = 0; i < results.size(); i++) {
-          // For each hit, we know distance, impact point, name of geometry.
-          float dist = results.getCollision(i).getDistance();
-          Vector3f pt = results.getCollision(i).getContactPoint();
-          String hit = results.getCollision(i).getGeometry().getName();
-
-          System.out.println("* Collision #" + i);
-          System.out.println("  You shot " + hit + " at " + pt + ", " + dist + " wu away.");
-         }
+        if(results.size() > 0){
+            if(results.getCollision(0).getGeometry().getName().contains("brick")){
+                results.getCollision(0).getGeometry().getParent().detachChild(results.getCollision(0).getGeometry());
+            }
+        }
    }
  
   /** A plus sign used as crosshairs to help the player with aiming.*/
