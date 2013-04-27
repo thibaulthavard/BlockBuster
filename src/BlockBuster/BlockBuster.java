@@ -59,6 +59,7 @@ implements ActionListener, AnimEventListener {
  
   /** Préparation des géométries et volume de control*/
   private RigidBodyControl    brick_phy;
+  private RigidBodyControl    brick_stat_phy;
   private static final Box    box;
   private RigidBodyControl    floor_phy;
   private static final Box    floor;
@@ -103,6 +104,9 @@ implements ActionListener, AnimEventListener {
    
     /** Mise en place de la physique */
     bulletAppState = new BulletAppState();
+    
+    bulletAppState.setThreadingType(BulletAppState.ThreadingType.PARALLEL);
+    
     stateManager.attach(bulletAppState);
     bulletAppState.getPhysicsSpace().enableDebug(assetManager);
     compteur = 0;
@@ -186,40 +190,43 @@ implements ActionListener, AnimEventListener {
                 geom[k][i][j].setMaterial(wall_mat);
                 geom[k][i][j].setLocalTranslation(vt);             
                 
-                brick_phy = new RigidBodyControl(0.5f);
+                brick_phy = new RigidBodyControl(0.1f);
                 geom[k][i][j].addControl(brick_phy);
                 bulletAppState.getPhysicsSpace().add(brick_phy);
                 
                 //Jonction des blocs entre eux
                 if(i>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
-                    joint.setCollisionBetweenLinkedBodys(false);
-                    bulletAppState.getPhysicsSpace().add(joint);
-                    
-                    joint=new HingeJoint(geom[k][i-1][j].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(-0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
-                    joint.setCollisionBetweenLinkedBodys(false);
-                    bulletAppState.getPhysicsSpace().add(joint);
+                    bulletAppState.getPhysicsSpace().add(joint);;
                 }
                 if(j>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
-                    joint.setCollisionBetweenLinkedBodys(false);
-                    bulletAppState.getPhysicsSpace().add(joint);
-                    joint=new HingeJoint(geom[k][i][j-1].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,-0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
-                    joint.setCollisionBetweenLinkedBodys(false);
                     bulletAppState.getPhysicsSpace().add(joint);
                 }
                 if(k>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k-1][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
-                    joint.setCollisionBetweenLinkedBodys(false);
-                    
                     bulletAppState.getPhysicsSpace().add(joint);
-                    joint=new HingeJoint(geom[k-1][i][j].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,-0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
-                    joint.setCollisionBetweenLinkedBodys(false);
-                    bulletAppState.getPhysicsSpace().add(joint);
+
                 }
-                if(Math.random()<0.5){
-                    node_bloc.attachChild(geom[k][i][j]);     
+                float prob = 0;
+                if((k<=2)&&(k>=1)){
+                    prob += 0.3;
+                }else{
+                    prob +=0.1;
                 }
+                if((j<=2)&&(j>=1)){
+                    prob += 0.3;
+                }else{
+                    prob +=0.1;
+                }
+                if((i<=2)&&(i>=1)){
+                    prob += 0.3;
+                }else{
+                    prob +=0.1;
+                }
+                if(Math.random()<prob){
+                    node_bloc.attachChild(geom[k][i][j]);      
+               }
             }
         }
     }
@@ -248,37 +255,43 @@ implements ActionListener, AnimEventListener {
                 geom[k][i][j].setMaterial(wall_mat);
                 geom[k][i][j].setLocalTranslation(vt);
                 
-                brick_phy = new RigidBodyControl(0.5f);
+                brick_phy = new RigidBodyControl(0.1f);
                 geom[k][i][j].addControl(brick_phy);
                 bulletAppState.getPhysicsSpace().add(brick_phy);
                
                 if(i>0){
-                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
-                    joint.setCollisionBetweenLinkedBodys(false);
+                    HingeJoint joint= new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class),
+                                          geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,
+                                          new Vector3f(0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
                     bulletAppState.getPhysicsSpace().add(joint);
-                    
-                    joint=new HingeJoint(geom[k][i-1][j].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(-0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
-                    joint.setCollisionBetweenLinkedBodys(false);
-                    bulletAppState.getPhysicsSpace().add(joint);
+
                 }
                 if(j>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
-                    joint.setCollisionBetweenLinkedBodys(false);
                     bulletAppState.getPhysicsSpace().add(joint);
-                    joint=new HingeJoint(geom[k][i][j-1].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,-0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
-                    joint.setCollisionBetweenLinkedBodys(false);
-                    bulletAppState.getPhysicsSpace().add(joint);
+
                 }
                 if(k>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k-1][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
-                    joint.setCollisionBetweenLinkedBodys(false);
-                    
-                    bulletAppState.getPhysicsSpace().add(joint);
-                    joint=new HingeJoint(geom[k-1][i][j].getControl(RigidBodyControl.class), geom[k][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,-0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
-                    joint.setCollisionBetweenLinkedBodys(false);
                     bulletAppState.getPhysicsSpace().add(joint);
                 }
-                if(Math.random()<0.5){
+                float prob = 0;
+                if((k<=2)&&(k>=1)){
+                    prob += 0.3;
+                }else{
+                    prob +=0.1;
+                }
+                if((j<=2)&&(j>=1)){
+                    prob += 0.3;
+                }else{
+                    prob +=0.1;
+                }
+                if((i<=2)&&(i>=1)){
+                    prob += 0.3;
+                }else{
+                    prob +=0.1;
+                }
+                if(Math.random()<prob){
                     node_bloc.attachChild(geom[k][i][j]);      
                }
             }
@@ -422,44 +435,39 @@ implements ActionListener, AnimEventListener {
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
 
+        //Vérification des noeuds
         for(int i = 0; i < obj_pierre.getChildren().size();i++){
             Node node_temp = (Node) obj_pierre.getChild(i);
-            if(node_temp.getChildren().size()>0){
+            //Si il possède des enfants(des blocs) et que le bloc est dynamique on vérifie ses mouvements
+            if((node_temp.getChildren().size()>0)&&(node_temp.getUserData("dynamic").equals(true))){
                 Geometry geom_temp = (Geometry) node_temp.getChild(0);
+                //Sauvegarde des positions à différents instants
                 if(tick_compt==10){
-                    // System.out.println("teste null");
                     node_temp.setUserData("pos2", geom_temp.getWorldTranslation().clone());
                 }
                 if(tick_compt==20){
                     node_temp.setUserData("pos", geom_temp.getWorldTranslation().clone());
                 }
-                if(node_temp.getUserData("dynamic").equals(true)){
-                    Vector3f vec = (Vector3f)node_temp.getUserData("pos");
-                    Vector3f vec_prec = (Vector3f)node_temp.getUserData("pos2");
-                    float vec_move = vec.distance(vec_prec);
-
-                    System.out.println("teste vec "+i+" x="+vec.x+" y = "+vec.y+" z="+vec.z);
-                    System.out.println("teste vec prec "+i+" x="+vec_prec.x+" y = "+vec_prec.y+" z="+vec_prec.z+" dist = "+vec_move);
-                    //geom_temp.collideWith(node_floor, results);
-                    if(vec_move < 0.0009){
-                        System.out.println("teste vec "+tick_compt);
-                        for(int j = 0; j < node_temp.getChildren().size();j++){
-                            Geometry g_temp = (Geometry) node_temp.getChild(j);
-                            try{
-                                g_temp.removeControl(g_temp.getControl(0));    
-                            }catch(Exception e){
-                                System.out.println("catch teste "+i+" "+geom_temp.getLocalTranslation().x+" y ="+geom_temp.getLocalTranslation().y);
-                            }
-                            node_temp.setUserData("dynamic", false);
+                //Vérification de la distance entre les deux instants
+                Vector3f vec = (Vector3f)node_temp.getUserData("pos");
+                Vector3f vec_prec = (Vector3f)node_temp.getUserData("pos2");
+                float vec_move = vec.distance(vec_prec);
+                if(vec_move < 0.009){
+                    for(int j = 0; j < node_temp.getChildren().size();j++){
+                        Geometry g_temp = (Geometry) node_temp.getChild(j);
+                        try{
+                            g_temp.removeControl(g_temp.getControl(0));
+                            brick_stat_phy = new RigidBodyControl(0.0f);
+                            g_temp.addControl(brick_stat_phy);
+                            bulletAppState.getPhysicsSpace().add(brick_stat_phy);
+                        }catch(Exception e){
+                            System.out.println("Exception : pas de contrôle");
                         }
+                        node_temp.setUserData("dynamic", false);
                     }
-
-                }else{
-
                 }
-            }
-        }//End For
-        
+            }//End For
+        }
         tick_compt++;
         if(tick_compt>20){
             tick_compt = 1;
