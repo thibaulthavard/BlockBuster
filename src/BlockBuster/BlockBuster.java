@@ -32,6 +32,7 @@ import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Sphere.TextureMode;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
+import jme3tools.optimize.GeometryBatchFactory;
  
 /**
  * BLOCKBUSTER
@@ -65,9 +66,8 @@ implements ActionListener, AnimEventListener {
   private static final Box    floor;
  
   /** Dimension d'un sous-bloc */
-  private static final float brickLength = 0.1f;
-  private static final float brickWidth  = 0.1f;
-  private static final float brickHeight = 0.1f;
+  private static final float brickLength = 0.2f;
+  private int nb_bloc_max = 4;
   
   /** Initialisation des variables utilisateurs joueur,camera ... **/
    private PhysicsCharacter player;
@@ -90,7 +90,7 @@ implements ActionListener, AnimEventListener {
   static {
 
     /**Initialisation des géométries */
-    box = new Box(Vector3f.ZERO, brickLength, brickHeight, brickWidth);
+    box = new Box(Vector3f.ZERO, brickLength, brickLength, brickLength);
     box.scaleTextureCoordinates(new Vector2f(0.5f, 0.5f));
     floor = new Box(Vector3f.ZERO, 100f, 0.1f, 100f);
     floor.scaleTextureCoordinates(new Vector2f(100, 100));
@@ -113,7 +113,7 @@ implements ActionListener, AnimEventListener {
     
     //Initialisation de l'environnement
     initMaterials();
-    initWall(new Vector3f(10,0,0));
+    initWall(new Vector3f(0,1,brickLength*nb_bloc_max+2));
     initFloor();
     initCrossHairs();
 
@@ -179,32 +179,32 @@ implements ActionListener, AnimEventListener {
   /** Création du premier blocs lors du debut du jeu */
   public void initWall(Vector3f loc) {
     Node node_bloc = new Node("brick" + compteur);
-    Geometry[][][] geom = new Geometry[4][4][4];
-    for(int k = 0; k <4; k++){
-        for (int j = 0; j < 4; j++) {
-            for (int i = 0; i < 4; i++) {
+    Geometry[][][] geom = new Geometry[nb_bloc_max][nb_bloc_max][nb_bloc_max];
+    for(int k = 0; k <nb_bloc_max; k++){
+        for (int j = 0; j < nb_bloc_max; j++) {
+            for (int i = 0; i < nb_bloc_max; i++) {
                 Vector3f vt =
-                 new Vector3f((i * brickLength*2f)+loc.x, (j*brickHeight*2f)+loc.y, (k*brickWidth*2f)+loc.z);
+                 new Vector3f((i * brickLength*2f)+loc.x, (j*brickLength*2f)+loc.y, (k*brickLength*2f)+loc.z);
 
                 geom[k][i][j] = new Geometry("brick", box);
                 geom[k][i][j].setMaterial(wall_mat);
                 geom[k][i][j].setLocalTranslation(vt);             
                 
-                brick_phy = new RigidBodyControl(0.1f);
+                brick_phy = new RigidBodyControl(1f);
                 geom[k][i][j].addControl(brick_phy);
                 bulletAppState.getPhysicsSpace().add(brick_phy);
                 
                 //Jonction des blocs entre eux
                 if(i>0){
-                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
+                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(brickLength*2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
                     bulletAppState.getPhysicsSpace().add(joint);;
                 }
                 if(j>0){
-                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
+                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,brickLength*2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
                     bulletAppState.getPhysicsSpace().add(joint);
                 }
                 if(k>0){
-                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k-1][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
+                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k-1][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,brickLength*2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
                     bulletAppState.getPhysicsSpace().add(joint);
 
                 }
@@ -234,6 +234,7 @@ implements ActionListener, AnimEventListener {
     node_bloc.setUserData("pos", loc);
     node_bloc.setUserData("pos2", Vector3f.ZERO);
     obj_pierre.attachChild(node_bloc);
+    
     rootNode.attachChild(obj_pierre);
 
 
@@ -244,35 +245,36 @@ implements ActionListener, AnimEventListener {
   public void makeBrick(Vector3f loc) {
 
     Node node_bloc = new Node("brick" + compteur);
-    Geometry[][][] geom = new Geometry[4][4][4];
-    for(int k = 0; k <4; k++){
-        for (int j = 0; j < 4; j++) {
-            for (int i = 0; i < 4; i++) {
+    Geometry[][][] geom = new Geometry[nb_bloc_max][nb_bloc_max][nb_bloc_max];
+    for(int k = 0; k <nb_bloc_max; k++){
+        for (int j = 0; j < nb_bloc_max; j++) {
+            for (int i = 0; i < nb_bloc_max; i++) {
                 Vector3f vt =
-                 new Vector3f((i * brickLength*2f)+loc.x, (j*brickHeight*2f)+loc.y, (k*brickWidth*2f)+loc.z);
+                 new Vector3f((i * brickLength*2f)+loc.x, (j*brickLength*2f)+loc.y, (k*brickLength*2f)+loc.z);
 
                 geom[k][i][j] = new Geometry("brick", box);
                 geom[k][i][j].setMaterial(wall_mat);
                 geom[k][i][j].setLocalTranslation(vt);
                 
-                brick_phy = new RigidBodyControl(0.1f);
+                brick_phy = new RigidBodyControl(1f);
                 geom[k][i][j].addControl(brick_phy);
                 bulletAppState.getPhysicsSpace().add(brick_phy);
                
                 if(i>0){
                     HingeJoint joint= new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class),
                                           geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,
-                                          new Vector3f(0.2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
+                                          new Vector3f(brickLength*2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
                     bulletAppState.getPhysicsSpace().add(joint);
 
                 }
                 if(j>0){
-                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0.2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
+                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,brickLength*2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
                     bulletAppState.getPhysicsSpace().add(joint);
+                    //bulletAppState.getPhysicsSpace().
 
                 }
                 if(k>0){
-                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k-1][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,0.2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
+                    HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k-1][i][j].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,0f,brickLength*2f), Vector3f.UNIT_Z, Vector3f.UNIT_Z);
                     bulletAppState.getPhysicsSpace().add(joint);
                 }
                 float prob = 0;
@@ -300,6 +302,7 @@ implements ActionListener, AnimEventListener {
     node_bloc.setUserData("dynamic", true);
     node_bloc.setUserData("pos", loc);
     node_bloc.setUserData("pos2", Vector3f.ZERO);
+    
     obj_pierre.attachChild(node_bloc);
     compteur++;
   }
@@ -315,6 +318,7 @@ implements ActionListener, AnimEventListener {
         if(results.size() > 0){
             if(results.getCollision(0).getGeometry().getName().contains("brick")){
                 results.getCollision(0).getGeometry().getParent().detachChild(results.getCollision(0).getGeometry());
+                bulletAppState.getPhysicsSpace().remove(results.getCollision(0).getGeometry());
             }
         }
    }
