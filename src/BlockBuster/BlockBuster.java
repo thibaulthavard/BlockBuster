@@ -32,7 +32,6 @@ import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Sphere.TextureMode;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
-import jme3tools.optimize.GeometryBatchFactory;
  
 /**
  * BLOCKBUSTER
@@ -233,8 +232,7 @@ implements ActionListener, AnimEventListener {
     node_bloc.setUserData("dynamic", true);
     node_bloc.setUserData("pos", loc);
     node_bloc.setUserData("pos2", Vector3f.ZERO);
-    obj_pierre.attachChild(node_bloc);
-    
+    obj_pierre.attachChild(node_bloc);    
     rootNode.attachChild(obj_pierre);
 
 
@@ -270,7 +268,6 @@ implements ActionListener, AnimEventListener {
                 if(j>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,brickLength*2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
                     bulletAppState.getPhysicsSpace().add(joint);
-                    //bulletAppState.getPhysicsSpace().
 
                 }
                 if(k>0){
@@ -302,7 +299,6 @@ implements ActionListener, AnimEventListener {
     node_bloc.setUserData("dynamic", true);
     node_bloc.setUserData("pos", loc);
     node_bloc.setUserData("pos2", Vector3f.ZERO);
-    
     obj_pierre.attachChild(node_bloc);
     compteur++;
   }
@@ -318,7 +314,6 @@ implements ActionListener, AnimEventListener {
         if(results.size() > 0){
             if(results.getCollision(0).getGeometry().getName().contains("brick")){
                 results.getCollision(0).getGeometry().getParent().detachChild(results.getCollision(0).getGeometry());
-                bulletAppState.getPhysicsSpace().remove(results.getCollision(0).getGeometry());
             }
         }
    }
