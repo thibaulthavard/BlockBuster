@@ -65,7 +65,7 @@ implements ActionListener, AnimEventListener {
   private static final Box    floor;
  
   /** Dimension d'un sous-bloc */
-  private static final float brickLength = 0.2f;
+  private static final float brickLength = 0.3f;
   private int nb_bloc_max = 4;
   
   /** Initialisation des variables utilisateurs joueur,camera ... **/
@@ -105,9 +105,11 @@ implements ActionListener, AnimEventListener {
     bulletAppState = new BulletAppState();
     
     bulletAppState.setThreadingType(BulletAppState.ThreadingType.PARALLEL);
-    
+    setDisplayFps(false); // to hide the FPS
+    setDisplayStatView(false); // to hide the statistics
     stateManager.attach(bulletAppState);
-    bulletAppState.getPhysicsSpace().enableDebug(assetManager);
+   
+    //bulletAppState.getPhysicsSpace().enableDebug(assetManager);
     compteur = 0;
     
     //Initialisation de l'environnement
