@@ -196,7 +196,7 @@ implements ActionListener, AnimEventListener {
                 //Jonction des blocs entre eux
                 if(i>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i-1][j].getControl(RigidBodyControl.class), Vector3f.ZERO,new Vector3f(brickLength*2f,0f,0f), Vector3f.UNIT_X, Vector3f.UNIT_X);
-                    bulletAppState.getPhysicsSpace().add(joint);;
+                    bulletAppState.getPhysicsSpace().add(joint);
                 }
                 if(j>0){
                     HingeJoint joint=new HingeJoint(geom[k][i][j].getControl(RigidBodyControl.class), geom[k][i][j-1].getControl(RigidBodyControl.class), Vector3f.ZERO, new Vector3f(0f,brickLength*2f,0f), Vector3f.UNIT_Y, Vector3f.UNIT_Y);
